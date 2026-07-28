@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  EMPLOYEE
+}
+
+enum LetterType {
+  INCOMING
+  OUTGOING
+  INTERNAL
+}
+
+enum LetterStatus {
+  DRAFT
+  SENT
+  RECEIVED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Company {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+
+  users       User[]
+  departments Department[]
+  letters     Letter[]
+}
+
+model Department {
+  id          String    @id @default(cuid())
+  name        String
+
+  companyId   String
+  company      Company   @relation(fields: [companyId], references: [id])
+
+  users        User[]
+}
+
+model User {
+  id            String    @id @default(cuid())
+
+  fullName      String
+  username      String    @unique
+  password      String
+
+  role          UserRole  @default(EMPLOYEE)
+
+  isActive      Boolean   @default(true)
+
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id])
+
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+
+  createdLetters Letter[] @relation("Creator")
+}
+
+model Letter {
+  id                  String        @id @default(cuid())
+
+  number              Int           @unique
+  subject             String
+  description         String
+
+  type                LetterType
+  status              LetterStatus  @default(DRAFT)
+  priority            Priority      @default(NORMAL)
+
+  companyId           String
+  company             Company       @relation(fields: [companyId], references: [id])
+
+  creatorId           String
+  creator             User          @relation("Creator", fields: [creatorId], references: [id])
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
